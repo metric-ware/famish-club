@@ -1,0 +1,213 @@
+@font-face {
+  font-family: "Baloo Paaji";
+  src: url("fonts/BalooPaaji.ttf") format("truetype");
+}
+
+:root {
+  --ground: #1a3d2f;
+  /* the HUD's palette: its windows' flat graphite and steel rim */
+  --panel: rgba(24, 26, 30, 0.94);
+  --panel-edge: #3e424a;
+  --rim: #0b0c0e;
+  --text: #ffffff;
+  --label: #c8ccd2;
+  --muted: #9ca0a8;
+  --field: #131417;
+  --field-edge: rgba(255, 255, 255, 0.1);
+  --play: #4cba60;
+  --play-top: #66d07a;
+  --play-edge: #2a7a3a;
+  --discord: #5865f2;
+  --discord-top: #6f7bff;
+  --discord-edge: #3a44b8;
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  height: 100%;
+  overflow: hidden;
+  background: var(--ground);
+  font-family: "Baloo Paaji", system-ui, sans-serif;
+  color: var(--text);
+  user-select: none;
+}
+
+canvas {
+  display: block;
+  width: 100vw;
+  height: 100vh;
+  /* the game focuses the canvas to get the keys; the browser's focus ring would show as a line along the page's edge */
+  outline: none;
+}
+
+/* A WebGL canvas is black until its first frame: keep it out of sight while the page shows the boot text. */
+body:not(.ready) canvas { visibility: hidden; }
+
+#boot {
+  position: fixed;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  background: var(--ground);
+  /* a system font: the game's own font is a download, and text set in it stays invisible until it arrives */
+  font: 800 34px system-ui, sans-serif;
+  letter-spacing: 0.04em;
+}
+
+body.ready #boot { display: none; }
+
+#menu {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 18px;
+  padding: 16px;
+}
+
+#menu[hidden], #error[hidden] { display: none; }
+
+#chat[hidden] { display: none; }
+#chat {
+  position: fixed;
+  left: 50%;
+  top: calc(50% + 80px);
+  transform: translateX(-50%);
+  width: min(340px, calc(100vw - 32px));
+  padding: 8px 12px;
+  border: 3px solid #725126;
+  border-radius: 10px;
+  background: #392a14;
+  box-shadow: 0 4px 0 #251d12;
+}
+#chat-input {
+  width: 100%;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  color: white;
+  font: inherit;
+  font-size: 20px;
+  user-select: text;
+}
+
+.menu-panel {
+  position: relative;
+  width: min(100%, 400px);
+  max-height: calc(100dvh - 32px);
+  overflow: auto;
+  padding: 28px 30px 30px;
+  border: 2px solid var(--panel-edge);
+  border-radius: 20px;
+  background: var(--panel);
+}
+.menu-header {
+  padding-bottom: 18px;
+  margin-bottom: 18px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  text-align: center;
+}
+.menu-header h1 {
+  margin: 0;
+  font-size: 44px;
+  font-weight: 400;
+  line-height: 1.15;
+  color: var(--text);
+}
+.menu-header h1 span { color: var(--play-top); }
+.menu-header p { margin: 4px 0 0; color: var(--muted); font-size: 16px; line-height: 1.4; }
+#join { display: grid; gap: 7px; }
+#join label { font-size: 15px; line-height: 1.4; color: var(--label); }
+#join label:not(:first-child) { margin-top: 9px; }
+#nickname, #servers {
+  width: 100%;
+  min-width: 0;
+  height: 48px;
+  padding: 0 14px;
+  border: 2px solid var(--field-edge);
+  border-radius: 12px;
+  background-color: var(--field);
+  color: var(--text);
+  font: inherit;
+  font-size: 18px;
+  outline: none;
+  transition: border-color 120ms, background-color 120ms;
+}
+#nickname { user-select: text; }
+#nickname::placeholder { color: var(--muted); opacity: 1; }
+#nickname:hover, #servers:hover { border-color: rgba(255, 255, 255, 0.18); }
+#nickname:focus, #servers:focus-visible { border-color: rgba(255, 255, 255, 0.45); }
+#servers {
+  appearance: none;
+  padding-right: 38px;
+  cursor: pointer;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8'%3E%3Cpath d='M1 1l5 5 5-5' fill='none' stroke='%23ffffff' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 16px center;
+  font-size: 16px;
+}
+#servers option { background: #18191d; color: var(--text); }
+
+/* Play and Discord: chunky game buttons, a lighter top, a dark rim and a solid edge underneath that they press into */
+#play, #discord {
+  --top: var(--play-top);
+  --base: var(--play);
+  --edge: var(--play-edge);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  width: 100%;
+  border: 2px solid var(--rim);
+  border-radius: 14px;
+  background: linear-gradient(180deg, var(--top), var(--base) 55%);
+  box-shadow: inset 0 2px 0 rgba(255, 255, 255, 0.25), 0 5px 0 var(--edge), 0 7px 0 var(--rim);
+  color: var(--text);
+  font: inherit;
+  line-height: 1;
+  text-shadow: 0 2px 0 rgba(0, 0, 0, 0.35);
+  cursor: pointer;
+  transition: filter 120ms, transform 60ms, box-shadow 60ms;
+}
+#play, #discord {
+  height: 54px;
+  font-size: 26px;
+}
+#play { margin-top: 16px; }
+#discord {
+  --top: var(--discord-top);
+  --base: var(--discord);
+  --edge: var(--discord-edge);
+  margin-top: 18px;
+  text-decoration: none;
+}
+#discord svg { flex: none; filter: drop-shadow(0 2px 0 rgba(0, 0, 0, 0.3)); }
+#play:hover, #play:focus-visible, #discord:hover, #discord:focus-visible { filter: brightness(1.08); outline: none; }
+#play:focus-visible, #discord:focus-visible { border-color: var(--text); }
+#play:active, #discord:active {
+  transform: translateY(5px);
+  box-shadow: inset 0 2px 0 rgba(255, 255, 255, 0.25), 0 0 0 var(--edge), 0 2px 0 var(--rim);
+}
+#play:disabled { filter: saturate(0.4) brightness(0.8); cursor: default; transform: none; }
+#status:empty { display: none; }
+#status { margin: 22px 0 0; color: var(--label); font-size: 16px; line-height: 1.5; text-align: center; }
+@media (max-height: 560px) {
+  .menu-panel { padding: 16px 22px 20px; }
+  .menu-header { padding-bottom: 10px; margin-bottom: 12px; }
+  .menu-header h1 { font-size: 32px; }
+  .menu-header p { display: none; }
+}
+
+#error {
+  position: fixed;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  background: var(--ground);
+  font: 800 34px system-ui, sans-serif;
+  letter-spacing: 0.04em;
+}
