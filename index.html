@@ -1,0 +1,265 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Famish.club</title>
+  <meta name="description" content="Fight with players and build bases.">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Famish.club">
+  <meta property="og:title" content="Famish.club">
+  <meta property="og:description" content="Fight with players and build bases.">
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="Famish.club">
+  <meta name="twitter:description" content="Fight with players and build bases.">
+  <link rel="icon" type="image/png" sizes="128x128" href="favicon.png">
+  <link rel="apple-touch-icon" href="favicon.png">
+  <style>
+    @font-face {
+      font-family: "Baloo Paaji";
+      src: url("BalooPaaji.ttf") format("truetype");
+    }
+
+    :root {
+      --ground: #1a3d2f;
+      --text: #ffffff;
+      /* the menu's wood: planks, their dark rim and the shadow they sit on */
+      --wood: #5c3f22;
+      --wood-light: #6b4a28;
+      --wood-rim: #3a2713;
+      --wood-shadow: rgba(10, 20, 14, 0.45);
+      --logo: #ffffff;
+      --logo-edge: #3a2410;
+      --field: #13221d;
+      --field-text: #d9e4dc;
+      --muted: #7f8f86;
+      --server: #c4641f;
+      --server-top: #d4752c;
+      --server-edge: #8a4313;
+      --play: #f2c40f;
+      --play-top: #ffd93a;
+      --play-edge: #b38b06;
+      --discord: #5865f2;
+      --discord-top: #6f7bff;
+      --discord-edge: #3a44b8;
+    }
+
+    * { box-sizing: border-box; }
+
+    html, body {
+      margin: 0;
+      height: 100%;
+      overflow: hidden;
+      background: var(--ground);
+      font-family: "Baloo Paaji", system-ui, sans-serif;
+      color: var(--text);
+      user-select: none;
+    }
+
+    canvas {
+      display: block;
+      width: 100vw;
+      height: 100vh;
+      /* the game focuses the canvas to get the keys; the browser's focus ring would show as a line along the page's edge */
+      outline: none;
+    }
+
+    /* A WebGL canvas is black until its first frame: keep it out of sight while the page shows the boot text. */
+    body:not(.ready) canvas { visibility: hidden; }
+
+    #boot, #error {
+      position: fixed;
+      inset: 0;
+      display: grid;
+      place-items: center;
+      background: var(--ground);
+      /* a system font: the game's own font is a download, and text set in it stays invisible until it arrives */
+      font: 800 34px system-ui, sans-serif;
+      letter-spacing: 0.04em;
+    }
+    body.ready #boot { display: none; }
+
+    #menu {
+      position: fixed;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 18px;
+      padding: 16px;
+    }
+
+    #menu[hidden], #error[hidden], #chat[hidden] { display: none; }
+
+    #chat {
+      position: fixed;
+      left: 50%;
+      top: calc(50% + 80px);
+      transform: translateX(-50%);
+      width: min(340px, calc(100vw - 32px));
+      padding: 8px 12px;
+      border: 3px solid #725126;
+      border-radius: 10px;
+      background: #392a14;
+      box-shadow: 0 4px 0 #251d12;
+    }
+    #chat-input {
+      width: 100%;
+      border: 0;
+      outline: 0;
+      background: transparent;
+      color: white;
+      font: inherit;
+      font-size: 20px;
+      user-select: text;
+    }
+
+    /* one wooden card: the name on top, then the name field, the server and Play side by side, and Discord. Its wood is
+       a warm dark brown with broad wavy grain, a knot or two, and a thin golden line inside the rim. */
+    .menu-panel {
+      display: flex;
+      flex-direction: column;
+      align-items: stretch;
+      gap: 15px;
+      width: min(100%, 555px);
+      max-height: calc(100dvh - 32px);
+      padding: 15px 26px 26px;
+      border: 6px solid var(--wood-rim);
+      border-radius: 26px;
+      background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 520 420' preserveAspectRatio='none'%3E%3Crect width='520' height='420' fill='%23523c22'/%3E%3Cg fill='%2346331e'%3E%3Cpath d='M0 38C120 16 205 72 322 50S468 18 520 44V72C440 56 382 96 300 82S118 56 0 78Z'/%3E%3Cpath d='M0 148C92 128 172 172 262 150S432 120 520 150V170C430 146 352 188 250 174S92 150 0 174Z'/%3E%3Cpath d='M0 252C142 226 212 288 332 262S462 230 520 256V288C452 262 382 302 300 294S120 262 0 292Z'/%3E%3Cpath d='M0 352C102 334 192 378 302 356S452 330 520 352V374C442 352 362 392 282 380S112 358 0 382Z'/%3E%3C/g%3E%3Cg fill='none' stroke='%233f2e1a' stroke-width='3' stroke-linecap='round'%3E%3Cpath d='M0 112C132 90 222 136 342 112S470 90 520 108'/%3E%3Cpath d='M0 212C112 196 202 232 302 212S452 188 520 206'/%3E%3Cpath d='M0 320C122 300 232 342 352 320S470 300 520 314'/%3E%3C/g%3E%3Cellipse cx='402' cy='213' rx='34' ry='11' fill='%2346331e'/%3E%3Cellipse cx='402' cy='213' rx='17' ry='5' fill='%233f2e1a'/%3E%3Cellipse cx='118' cy='300' rx='26' ry='8' fill='%2346331e'/%3E%3Cellipse cx='118' cy='300' rx='12' ry='4' fill='%233f2e1a'/%3E%3C/svg%3E") center / 100% 100% no-repeat, #523c22;
+      box-shadow:
+        inset 0 0 0 3px rgba(150, 108, 40, 0.55),
+        inset 0 6px 0 rgba(255, 225, 170, 0.08),
+        0 8px 0 var(--wood-shadow);
+    }
+
+    /* the name: big white lettering with a thick dark outline */
+    .logo {
+      margin: 0 0 2px;
+      color: var(--logo);
+      font-size: 77px;
+      font-weight: 400;
+      line-height: 1.1;
+      letter-spacing: 0.02em;
+      text-align: center;
+      -webkit-text-stroke: 12px var(--logo-edge);
+      paint-order: stroke fill;
+      text-shadow: 0 7px 0 var(--logo-edge);
+      white-space: nowrap;
+    }
+
+    #join {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 13px;
+    }
+    #nickname {
+      grid-column: 1 / -1;
+      width: 100%;
+      min-width: 0;
+      height: 60px;
+      padding: 0 17px;
+      border: 4px solid var(--wood-rim);
+      border-radius: 12px;
+      background: var(--field);
+      box-shadow: inset 0 4px 0 rgba(0, 0, 0, 0.35);
+      color: var(--field-text);
+      font: inherit;
+      font-size: 26px;
+      text-align: center;
+      outline: none;
+      user-select: text;
+    }
+    #nickname::placeholder { color: var(--muted); opacity: 1; }
+
+    /* chunky buttons: a lighter top, a dark rim and a solid edge underneath that they press into */
+    #servers, #play, #discord {
+      --top: var(--server-top);
+      --base: var(--server);
+      --edge: var(--server-edge);
+      height: 62px;
+      border: 4px solid var(--wood-rim);
+      border-radius: 12px;
+      background: linear-gradient(180deg, var(--top), var(--base) 60%);
+      box-shadow: 0 5px 0 var(--edge);
+      color: var(--text);
+      font: inherit;
+      cursor: pointer;
+      outline: none;
+      transition: filter 120ms, transform 60ms, box-shadow 60ms;
+    }
+    #servers {
+      min-width: 0;
+      appearance: none;
+      padding: 0 42px 0 17px;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8'%3E%3Cpath d='M1 1l5 5 5-5' fill='none' stroke='%23ffffff' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E"), linear-gradient(180deg, var(--top), var(--base) 60%);
+      background-repeat: no-repeat;
+      background-position: right 17px center, 0 0;
+      color: #fff3e2;
+      font-size: 21px;
+      text-shadow: 0 1px 0 rgba(0, 0, 0, 0.3);
+    }
+    #servers option { background: #3a2713; color: var(--text); }
+    #play {
+      --top: var(--play-top);
+      --base: var(--play);
+      --edge: var(--play-edge);
+      padding: 0 38px;
+      font-size: 34px;
+      line-height: 1;
+      text-shadow: 0 2px 0 rgba(90, 60, 0, 0.55);
+    }
+    #discord {
+      --top: var(--discord-top);
+      --base: var(--discord);
+      --edge: var(--discord-edge);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      align-self: center;
+      gap: 10px;
+      min-width: 285px;
+      margin-top: 2px;
+      padding: 0 30px;
+      font-size: 26px;
+      text-decoration: none;
+      text-shadow: 0 2px 0 rgba(0, 0, 0, 0.3);
+    }
+    #discord svg { flex: none; }
+    #servers:hover, #servers:focus-visible, #play:hover, #play:focus-visible, #discord:hover, #discord:focus-visible { filter: brightness(1.08); }
+    #play:focus-visible, #discord:focus-visible, #servers:focus-visible { border-color: #fff3d0; }
+    #play:active, #discord:active { transform: translateY(5px); box-shadow: 0 0 0 var(--edge); }
+    #play:disabled { filter: saturate(0.4) brightness(0.8); cursor: default; transform: none; box-shadow: 0 5px 0 var(--edge); }
+    @media (max-width: 555px) {
+      .logo { font-size: 52px; -webkit-text-stroke-width: 10px; }
+    }
+  </style>
+</head>
+<body>
+  <canvas id="game" tabindex="0" aria-label="Game"></canvas>
+
+  <main id="menu" hidden>
+    <section class="menu-panel" aria-label="Join game">
+      <h1 class="logo">FAMISH.CLUB</h1>
+      <form id="join">
+        <input id="nickname" type="text" maxlength="10" placeholder="Nickname" autocomplete="off" spellcheck="false" aria-label="Nickname">
+        <select id="servers" aria-label="Server"></select>
+        <button id="play" type="submit">PLAY</button>
+      </form>
+      <a id="discord" href="https://discord.gg/fCXtuPveN9" target="_blank" rel="noopener noreferrer">
+        <svg viewBox="0 0 24 24" width="28" height="28" aria-hidden="true"><path fill="currentColor" d="M20.32 4.37A19.8 19.8 0 0 0 15.39 2.84a.07.07 0 0 0-.08.04c-.21.38-.45.87-.61 1.25a18.27 18.27 0 0 0-5.49 0 12.6 12.6 0 0 0-.62-1.25.08.08 0 0 0-.08-.04 19.74 19.74 0 0 0-4.93 1.53.07.07 0 0 0-.03.03C.53 9.05-.32 13.58.1 18.06a.08.08 0 0 0 .03.06 19.9 19.9 0 0 0 5.99 3.03.08.08 0 0 0 .08-.03c.46-.63.87-1.29 1.23-1.99a.08.08 0 0 0-.04-.11 13.1 13.1 0 0 1-1.87-.89.08.08 0 0 1-.01-.13l.37-.29a.07.07 0 0 1 .08-.01c3.93 1.79 8.18 1.79 12.06 0a.07.07 0 0 1 .08.01l.37.29a.08.08 0 0 1-.01.13c-.6.35-1.22.65-1.87.89a.08.08 0 0 0-.04.11c.36.7.78 1.36 1.23 1.99a.08.08 0 0 0 .08.03 19.84 19.84 0 0 0 6-3.03.08.08 0 0 0 .03-.05c.5-5.18-.84-9.67-3.55-13.66a.06.06 0 0 0-.03-.03ZM8.02 15.33c-1.18 0-2.16-1.09-2.16-2.42s.96-2.42 2.16-2.42c1.21 0 2.18 1.1 2.16 2.42 0 1.33-.96 2.42-2.16 2.42Zm7.97 0c-1.18 0-2.16-1.09-2.16-2.42s.96-2.42 2.16-2.42c1.21 0 2.18 1.1 2.16 2.42 0 1.33-.95 2.42-2.16 2.42Z"/></svg>
+        <span>Discord</span>
+      </a>
+    </section>
+  </main>
+
+  <form id="chat" hidden>
+    <input id="chat-input" type="text" maxlength="50" autocomplete="off" spellcheck="false" placeholder="Say something…" aria-label="Chat message">
+  </form>
+
+  <div id="boot">Loading...</div>
+  <div id="error" hidden></div>
+  <script type="module" src="main.js"></script>
+</body>
+</html>
